@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"github.com/zhaoleigege/tool/errors"
+	"github.com/zhaoleigege/tool/errorx"
 	"sync"
 )
+
+var NotExist = errors.New("not exist")
 
 type NameErr struct {
 	Name string
@@ -34,23 +37,23 @@ func Err1() {
 	err := foo()
 	fmt.Printf("出现错误: %s\n", err)
 	fmt.Printf("出现错误: %v\n", err)
-	switch e := errors.Cause(err).(type) {
+	switch e := errorx.Cause(err).(type) {
 	case *NameErr:
 		fmt.Printf("NameErr: %s: %d\n", e.Name, e.Age)
 	default:
 		switch e {
-		case errors.NotExist:
+		case NotExist:
 			fmt.Printf("原始错误是NotExist")
 		}
 	}
 
-	fmt.Printf("最里面的错误: %v\n", errors.Cause(err))
+	fmt.Printf("最里面的错误: %v\n", errorx.Cause(err))
 }
 
 func foo() error {
 	fmt.Println("foo")
 	if err := bar(); err != nil {
-		return errors.New(err, "foo出现错误")
+		return errorx.New(err, "foo出现错误")
 	}
 
 	return nil
@@ -60,10 +63,10 @@ func bar() error {
 	fmt.Println("bar")
 	return func() error {
 		//err := errors.New(errors.NotExist, "bar发生了错误")
-		err := errors.New(&NameErr{
+		err := errorx.New(&NameErr{
 			Name: "test",
 			Age:  20,
 		}, "bar发生了错误")
-		return errors.New(err, "闭包函数错误")
+		return errorx.New(err, "闭包函数错误")
 	}()
 }

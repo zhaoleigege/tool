@@ -7,13 +7,13 @@ golang相关的工具包实现
    go mod init github.com/zhaoleigege/tool
    ```
 
-2. 创建项目errors
+2. 创建项目errorx
 
    ```shell
-   mkdir errors
+   mkdir errorx
    
-   cd errors
-   go mod init github.com/zhaoleigege/tool/errors
+   cd errorx
+   go mod init github.com/zhaoleigege/tool/errorx
    ```
 
    

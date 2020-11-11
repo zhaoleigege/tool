@@ -8,16 +8,35 @@ import (
 )
 
 type bErr struct {
-	message string    // 这一次错误的信息描述
-	preErr  error     // 指向上一个错误
-	stack   []uintptr // 调用栈
+	message string // 这一次错误的信息描述
+	preErr  error  // 指向上一个错误
+	stack   Frames // 调用栈
+}
+
+type Frames []uintptr
+
+type Frame uintptr
+
+func (f Frame) FuncInfo() (string, int, string) {
+	ptr := uintptr(f) - 1
+
+	fc := runtime.FuncForPC(ptr)
+	file, line := fc.FileLine(ptr)
+
+	fcName := fc.Name()
+	lastIndex := strings.LastIndex(fcName, "/")
+	if lastIndex != -1 {
+		fcName = fcName[lastIndex+1:]
+	}
+
+	return file, line, fcName
 }
 
 // Error 实现了error接口
 func (e *bErr) Error() string {
 	buf := bytes.Buffer{}
 
-	pcs := make([]uintptr, 0)
+	pcs := make(Frames, 0)
 	msgs := make([]string, 0)
 	for innerErr := e; innerErr != nil; {
 		pcs = innerErr.stack
@@ -26,6 +45,11 @@ func (e *bErr) Error() string {
 
 		cause, ok := preErr.(*bErr)
 		if !ok {
+			lastIndex := len(msgs) - 1
+			if lastIndex >= 0 && preErr != nil {
+				msgs[lastIndex] = fmt.Sprintf("%s, %s", msgs[lastIndex], preErr.Error())
+			}
+
 			break
 		}
 
@@ -33,8 +57,8 @@ func (e *bErr) Error() string {
 	}
 
 	for i, pc := range pcs {
-		f := runtime.FuncForPC(pc - 1)
-		file, line := f.FileLine(pc - 1)
+		frame := Frame(pc)
+		file, line, funcName := frame.FuncInfo()
 
 		// 最外层的错误不再打印出来
 		if strings.Index(file, runtime.GOROOT()) != -1 {
@@ -47,7 +71,7 @@ func (e *bErr) Error() string {
 			msg = msgs[index]
 		}
 
-		buf.WriteString(fmt.Sprintf("\n\t %s:%d %s %s", file, line, f.Name(), msg))
+		buf.WriteString(fmt.Sprintf("\n\t %s:%d %s %s", file, line, funcName, msg))
 	}
 
 	return buf.String()
@@ -108,7 +132,7 @@ func Cause(err error) error {
 }
 
 // errCallers 返回bErr生成的函数调用栈
-func errCallers() []uintptr {
+func errCallers() Frames {
 	pc := make([]uintptr, 32)
 	n := runtime.Callers(3, pc)
 	return pc[:n]

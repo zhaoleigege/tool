@@ -2,6 +2,7 @@ package panicgroup
 
 import (
 	"fmt"
+	"os"
 	"runtime/debug"
 )
 
@@ -11,7 +12,7 @@ func HandleGoPanic(f func()) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Printf("%v stack: %s", r, debug.Stack())
+				_, _ = fmt.Fprintf(os.Stderr, "%v stack: %s", r, debug.Stack())
 				return
 			}
 		}()

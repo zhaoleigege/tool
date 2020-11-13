@@ -19,5 +19,7 @@ func TestPanicG_Done(t *testing.T) {
 
 	pg := New().Go(f1).Go(f2)
 	fmt.Println("等待结束")
-	pg.Done()
+	if err := pg.Done(); err != nil{
+		t.Error(err)
+	}
 }
